@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
+import 'package:intl/intl.dart';
 
 void main() {
   runApp(const MyApp());
@@ -32,9 +34,7 @@ class MyApp extends StatelessWidget {
           //
           // This works for code too, not just values: Most code changes can be
           // tested with just a hot reload.
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color.fromARGB(255, 164, 226, 255),
-          ),
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.black),
         ),
         home: const MyHomePage(title: 'Flutter Demo Home Page'),
       ),
@@ -42,7 +42,19 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyAppState extends ChangeNotifier {}
+class MyAppState extends ChangeNotifier {
+  var timeString = DateFormat('HH:mm:ss').format(DateTime.now());
+  MyAppState() {
+    void updateTime() {
+      timeString = DateFormat('HH:mm:ss').format(DateTime.now());
+      notifyListeners();
+      Timer(Duration(seconds: 1), updateTime);
+    }
+
+    Timer(Duration(seconds: 1), updateTime);
+    notifyListeners();
+  }
+}
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -83,59 +95,188 @@ class _MyHomePageState extends State<MyHomePage> {
     // The Flutter framework has been optimized to make rerunning build methods
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        actions: [
-          IconButton(
-            onPressed: () {
-              print('hello');
-            },
-            icon: Icon(Icons.menu),
-          ),
-        ],
-        title: Center(child: Text(widget.title)),
-        backgroundColor: theme.secondaryHeaderColor,
-        foregroundColor: theme.primaryColor,
-      ),
-      backgroundColor: theme.primaryColor,
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'hello world',
-              style: theme.textTheme.headlineLarge!.copyWith(
-                color: theme.colorScheme.onPrimary,
+    return LayoutBuilder(
+      builder: (context, boxConstraints) => Scaffold(
+        appBar: AppBar(
+          actions: [
+            IconButton(
+              onPressed: () {
+                print('hello');
+              },
+              icon: Icon(Icons.menu),
+            ),
+          ],
+          title: Center(child: TimeLabel()),
+          backgroundColor: theme.secondaryHeaderColor,
+          foregroundColor: theme.primaryColor,
+        ),
+        bottomNavigationBar: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // mainAxisSize: MainAxisSize.max
+          // labelPadding: EdgeInsets.all(100),
+          children: [
+            SizedBox(
+              height: boxConstraints.maxHeight * 0.05,
+              child: ElevatedButton(
+                onPressed: () {
+                  print('hello');
+                },
+                child: Text('-10'),
               ),
             ),
-            // Text(
-            //   // '$_counter',
-            //   ''
-            //   style: Theme.of(context).textTheme.headlineMedium,
-            // ),
+            SizedBox(width: boxConstraints.maxWidth * 0.6),
+            SizedBox(
+              height: boxConstraints.maxHeight * 0.05,
+              child: ElevatedButton(
+                onPressed: () {
+                  print('hello');
+                },
+                child: Text('+10'),
+              ),
+            ),
           ],
         ),
+        backgroundColor: theme.primaryColor,
+        body: BodyWidget(theme: theme),
+        // floatingActionButton: FloatingActionButton(
+        //   onPressed: _incrementCounter,
+        //   tooltip: 'Increment',
+        //   child: const Icon(Icons.add),
+        // ), // This trailing comma makes auto-formatting nicer for build methods.
+      ), //;
+    );
+  }
+}
+
+class TimeLabel extends StatefulWidget {
+  // String timeString = "";
+  const TimeLabel({super.key});
+  @override
+  State<TimeLabel> createState() => _TimeLabelState();
+}
+
+class _TimeLabelState extends State<TimeLabel> {
+  @override
+  Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+    var theme = Theme.of(context);
+    return Text(
+      appState.timeString,
+      style: theme.textTheme.headlineLarge!.copyWith(
+        color: theme.colorScheme.primary,
       ),
-      // floatingActionButton: FloatingActionButton(
-      //   onPressed: _incrementCounter,
-      //   tooltip: 'Increment',
-      //   child: const Icon(Icons.add),
-      // ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+}
+
+class BodyWidget extends StatelessWidget {
+  const BodyWidget({super.key, required this.theme});
+
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      // Center is a layout widget. It takes a single child and positions it
+      // in the middle of the parent.
+      child: Column(
+        spacing: 10,
+        // Column is also a layout widget. It takes a list of children and
+        // arranges them vertically. By default, it sizes itself to fit its
+        // children horizontally, and tries to be as tall as its parent.
+        //
+        // Column has various properties to control how it sizes itself and
+        // how it positions its children. Here we use mainAxisAlignment to
+        // center the children vertically; the main axis here is the vertical
+        // axis because Columns are vertical (the cross axis would be
+        // horizontal).
+        //
+        // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
+        // action in the IDE, or press "p" in the console), to see the
+        // wireframe for each widget.
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Column(
+                children: [
+                  Text(
+                    'hello world1',
+                    style: theme.textTheme.headlineLarge!.copyWith(
+                      color: theme.colorScheme.onPrimary,
+                    ),
+                  ),
+                  Text(
+                    'hello world1.1',
+                    style: theme.textTheme.bodySmall!.copyWith(
+                      color: theme.colorScheme.onPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                children: [
+                  Text(
+                    'hello world2',
+                    style: theme.textTheme.headlineLarge!.copyWith(
+                      color: theme.colorScheme.onPrimary,
+                    ),
+                  ),
+                  Text(
+                    'hello world2.1',
+                    style: theme.textTheme.bodySmall!.copyWith(
+                      color: theme.colorScheme.onPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Column(
+                children: [
+                  Text(
+                    'hello world3',
+                    style: theme.textTheme.headlineLarge!.copyWith(
+                      color: theme.colorScheme.onPrimary,
+                    ),
+                  ),
+                  Text(
+                    'hello world3.1',
+                    style: theme.textTheme.bodySmall!.copyWith(
+                      color: theme.colorScheme.onPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                children: [
+                  Text(
+                    'hello world4',
+                    style: theme.textTheme.headlineLarge!.copyWith(
+                      color: theme.colorScheme.onPrimary,
+                    ),
+                  ),
+                  Text(
+                    'hello world4.1',
+                    style: theme.textTheme.bodySmall!.copyWith(
+                      color: theme.colorScheme.onPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          // Text(
+          //   // '$_counter',
+          //   ''
+          //   style: Theme.of(context).textTheme.headlineMedium,
+          // ),
+        ],
+      ),
     );
   }
 }

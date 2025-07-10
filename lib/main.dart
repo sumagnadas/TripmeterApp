@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
@@ -7,6 +5,10 @@ import 'package:geolocator/geolocator.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:tripmeter/location_access.dart';
 import 'package:intl/intl.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
+// ...
+
+// The following line will enable the Android and iOS wakelock.
 
 void main() {
   runApp(const MyApp());
@@ -81,7 +83,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    // var appState = context.watch<MyAppState>();
     var theme = Theme.of(context);
     // The Flutter framework has been optimized to make rerunning build methods
     // fast, so that you can just rebuild anything that needs updating rather
@@ -168,26 +170,13 @@ class BodyWidget extends StatefulWidget {
   State<BodyWidget> createState() => _BodyWidgetState();
 }
 
-class Vector3D {
-  double x = 0;
-  double y = 0;
-  double z = 0;
-  Vector3D(this.x, this.y, this.z);
-
-  Vector3D operator *(num scalar) =>
-      Vector3D(scalar * x, scalar * y, scalar * z);
-  Vector3D operator +(Vector3D vect) =>
-      Vector3D(vect.x + x, vect.y + y, vect.z + z);
-  double magnitude() => sqrt(x * x + y * y + z * z);
-}
-
 class _BodyWidgetState extends State<BodyWidget> {
   Position? _lastPosition;
   double _distance = 0.0;
   double _speed = 0.0;
   double _totalAvgSpeed = 0.0;
-  Timer? _timer;
-  var _avgSpeed = Vector3D(0.0, 0.0, 0.0);
+  // Timer? _timer;
+  // var _avgSpeed = Vector3D(0.0, 0.0, 0.0);
   double _totalAccl = 0.0;
   var _accl = Vector3D(0.0, 0.0, 0.0);
   DateTime? _lastTimeStamp;
@@ -196,6 +185,7 @@ class _BodyWidgetState extends State<BodyWidget> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await WakelockPlus.enable();
       await setUpLocation();
       userAccelerometerEventStream().listen(
         (UserAccelerometerEvent event) {
@@ -206,7 +196,7 @@ class _BodyWidgetState extends State<BodyWidget> {
                   _lastTimeStamp!.millisecondsSinceEpoch;
               var tempaccl = _accl * (delayms / 1000);
               print('accl ${tempaccl.x} ${tempaccl.y} ${tempaccl.z}');
-              _avgSpeed += _accl * (delayms / 1000);
+              // _avgSpeed += _accl * (delayms / 1000);
             }
             // print('avgspeed ${_avgSpeed.x} ${_avgSpeed.y} ${_avgSpeed.z}');
             _accl = Vector3D(event.x, event.y, event.z);
@@ -226,36 +216,38 @@ class _BodyWidgetState extends State<BodyWidget> {
       Geolocator.getPositionStream(locationSettings: settings).listen((
         Position newPos,
       ) {
+        double newDist = 0;
         if (_totalAccl > 0.4) {
-          setState(() {
-            if (_lastPosition != null) {
-              _distance +=
-                  Geolocator.distanceBetween(
-                    _lastPosition!.latitude,
-                    _lastPosition!.longitude,
-                    newPos.latitude,
-                    newPos.longitude,
-                  ) /
-                  1000;
-            }
-          });
-        }
-        _speed = newPos.speed * 3.6;
-        _lastPosition = newPos;
-      });
-      setState(() {
-        _timer = Timer(Duration(milliseconds: 100), () {
-          if (_startTimeStamp != null) {
-            setState(() {
-              _totalAvgSpeed =
-                  _distance /
-                  (DateTime.now().millisecondsSinceEpoch -
-                      _startTimeStamp!.millisecondsSinceEpoch) *
-                  1000;
-            });
+          if (_lastPosition != null) {
+            newDist =
+                Geolocator.distanceBetween(
+                  _lastPosition!.latitude,
+                  _lastPosition!.longitude,
+                  newPos.latitude,
+                  newPos.longitude,
+                ) /
+                1000;
           }
+        }
+        setState(() {
+          _distance += newDist;
+          _speed = newPos.speed * 3.6;
+          _lastPosition = newPos;
         });
       });
+      // setState(() {
+      Timer(Duration(milliseconds: 100), () {
+        if (_startTimeStamp != null) {
+          setState(() {
+            _totalAvgSpeed =
+                _distance /
+                (DateTime.now().millisecondsSinceEpoch -
+                    _startTimeStamp!.millisecondsSinceEpoch) *
+                1000;
+          });
+        }
+      });
+      // });
       _startTimeStamp = DateTime.now();
     });
   }
@@ -265,6 +257,14 @@ class _BodyWidgetState extends State<BodyWidget> {
     // var appState = context.watch<MyAppState>();
     var lat = _lastPosition?.latitude.toStringAsFixed(4);
     var long = _lastPosition?.longitude.toStringAsFixed(4);
+    var largeFont = widget.theme.textTheme.headlineLarge!.copyWith(
+      color: widget.theme.colorScheme.onPrimary,
+      fontSize: 50,
+    );
+    var smallFont = widget.theme.textTheme.headlineLarge!.copyWith(
+      color: widget.theme.colorScheme.onPrimary,
+      // has a fontSize 30
+    );
     return Center(
       // Center is a layout widget. It takes a single child and positions it
       // in the middle of the parent.
@@ -290,34 +290,14 @@ class _BodyWidgetState extends State<BodyWidget> {
             children: [
               Column(
                 children: [
-                  Text(
-                    '$lat',
-                    style: widget.theme.textTheme.headlineLarge!.copyWith(
-                      color: widget.theme.colorScheme.onPrimary,
-                    ),
-                  ),
-                  Text(
-                    '$long',
-                    style: widget.theme.textTheme.bodySmall!.copyWith(
-                      color: widget.theme.colorScheme.onPrimary,
-                    ),
-                  ),
+                  Text('$lat', style: largeFont),
+                  Text('$long', style: smallFont),
                 ],
               ),
               Column(
                 children: [
-                  Text(
-                    _distance.toStringAsFixed(2),
-                    style: widget.theme.textTheme.headlineLarge!.copyWith(
-                      color: widget.theme.colorScheme.onPrimary,
-                    ),
-                  ),
-                  Text(
-                    _speed.toStringAsFixed(2),
-                    style: widget.theme.textTheme.bodySmall!.copyWith(
-                      color: widget.theme.colorScheme.onPrimary,
-                    ),
-                  ),
+                  Text(_distance.toStringAsFixed(2), style: largeFont),
+                  Text(_speed.toStringAsFixed(2), style: smallFont),
                 ],
               ),
             ],
@@ -327,43 +307,18 @@ class _BodyWidgetState extends State<BodyWidget> {
             children: [
               Column(
                 children: [
-                  Text(
-                    _totalAccl.toStringAsFixed(2),
-                    style: widget.theme.textTheme.headlineLarge!.copyWith(
-                      color: widget.theme.colorScheme.onPrimary,
-                    ),
-                  ),
-                  Text(
-                    _totalAvgSpeed.toStringAsFixed(2),
-                    style: widget.theme.textTheme.bodySmall!.copyWith(
-                      color: widget.theme.colorScheme.onPrimary,
-                    ),
-                  ),
+                  Text(_totalAccl.toStringAsFixed(2), style: largeFont),
+                  Text(_totalAvgSpeed.toStringAsFixed(2), style: smallFont),
                 ],
               ),
               Column(
                 children: [
-                  Text(
-                    'hello world4',
-                    style: widget.theme.textTheme.headlineLarge!.copyWith(
-                      color: widget.theme.colorScheme.onPrimary,
-                    ),
-                  ),
-                  Text(
-                    'hello world4.1',
-                    style: widget.theme.textTheme.bodySmall!.copyWith(
-                      color: widget.theme.colorScheme.onPrimary,
-                    ),
-                  ),
+                  Text('hello world4', style: largeFont),
+                  Text('hello world4.1', style: smallFont),
                 ],
               ),
             ],
           ),
-          // Text(
-          //   // '$_counter',
-          //   ''
-          //   style: Theme.of(context).textTheme.headlineMedium,
-          // ),
         ],
       ),
     );

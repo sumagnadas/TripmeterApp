@@ -1,4 +1,5 @@
 import 'package:geolocator/geolocator.dart';
+import "dart:math";
 
 /// Determine the current position of the device.
 ///
@@ -57,4 +58,17 @@ Future<bool> setUpLocation() async {
   }
   await Geolocator.getCurrentPosition();
   return Future<bool>.value(true);
+}
+
+class Vector3D {
+  double x = 0;
+  double y = 0;
+  double z = 0;
+  Vector3D(this.x, this.y, this.z);
+
+  Vector3D operator *(num scalar) =>
+      Vector3D(scalar * x, scalar * y, scalar * z);
+  Vector3D operator +(Vector3D vect) =>
+      Vector3D(vect.x + x, vect.y + y, vect.z + z);
+  double magnitude() => sqrt(x * x + y * y + z * z);
 }

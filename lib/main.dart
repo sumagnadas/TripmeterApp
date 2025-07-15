@@ -6,6 +6,7 @@ import 'package:sensors_plus/sensors_plus.dart';
 import 'package:tripmeter/location_access.dart';
 import 'package:intl/intl.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:ntp/ntp.dart';
 // ...
 
 // The following line will enable the Android and iOS wakelock.
@@ -50,15 +51,49 @@ class MyApp extends StatelessWidget {
 
 class MyAppState extends ChangeNotifier {
   var timeString = DateFormat('HH:mm:ss').format(DateTime.now());
+  Duration _offset = Duration(seconds: 0);
+  Future<void> _initializeNTP() async {
+    try {
+      // Get the NTP time
+      final DateTime ntpStartTime = await NTP.now(
+        lookUpAddress: "time.google.com",
+      );
+      // Get the device's current time
+      final DateTime deviceStartTime = DateTime.now();
+
+      // Calculate the offset
+      _offset = ntpStartTime.difference(deviceStartTime);
+      // _ntpTime = deviceStartTime.add(Duration(milliseconds: _offset!));
+
+      print('NTP Time: $ntpStartTime');
+      print('Device Time: $deviceStartTime');
+      print('Offset (ms): $_offset');
+
+      // Immediately update the stream with the first synchronized time
+      // _clockStreamController.add(_ntpTime!);
+    } catch (e) {
+      print('Error synchronizing with NTP: $e');
+      // Fallback to device time if NTP fails
+      // _ntpTime = DateTime.now();
+      // _offset = 0;
+      // _clockStreamController.add(_ntpTime!);
+    }
+  }
+
   MyAppState() {
-    Future<void> updateTime() async {
-      timeString = DateFormat('HH:mm:ss').format(DateTime.now());
+    unawaited(_initializeNTP());
+    void updateTime(_) {
+      print(_offset);
+      int start = DateTime.now().millisecondsSinceEpoch;
+      DateTime syncedTime = DateTime.now().add(_offset);
+      int end = DateTime.now().millisecondsSinceEpoch;
+      // syncedTime.add;
+      timeString = DateFormat('HH:mm:ss.S').format(syncedTime);
+      _offset += Duration(milliseconds: end - start);
       notifyListeners();
-      Timer(Duration(seconds: 1), updateTime);
     }
 
-    Timer(Duration(seconds: 1), updateTime);
-    notifyListeners();
+    Timer.periodic(Duration(milliseconds: 100), updateTime);
   }
 }
 
@@ -94,7 +129,7 @@ class _MyHomePageState extends State<MyHomePage> {
           actions: [
             IconButton(
               onPressed: () {
-                print('hello');
+                // print('hello');
               },
               icon: Icon(Icons.menu),
             ),
@@ -195,7 +230,7 @@ class _BodyWidgetState extends State<BodyWidget> {
                   event.timestamp.millisecondsSinceEpoch -
                   _lastTimeStamp!.millisecondsSinceEpoch;
               var tempaccl = _accl * (delayms / 1000);
-              print('accl ${tempaccl.x} ${tempaccl.y} ${tempaccl.z}');
+              // print('accl ${tempaccl.x} ${tempaccl.y} ${tempaccl.z}');
               // _avgSpeed += _accl * (delayms / 1000);
             }
             // print('avgspeed ${_avgSpeed.x} ${_avgSpeed.y} ${_avgSpeed.z}');

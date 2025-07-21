@@ -4,9 +4,10 @@ import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:tripmeter/location_access.dart';
-import 'package:intl/intl.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
-import 'package:ntp/ntp.dart';
+import 'package:tripmeter/app_state.dart';
+import 'package:tripmeter/menu.dart';
+import 'dart:io' show Platform;
 // ...
 
 // The following line will enable the Android and iOS wakelock.
@@ -29,54 +30,6 @@ class MyApp extends StatelessWidget {
         home: const MyHomePage(title: 'Flutter Demo Home Page'),
       ),
     );
-  }
-}
-
-class MyAppState extends ChangeNotifier {
-  var timeString = DateFormat('HH:mm:ss').format(DateTime.now());
-  Duration _offset = Duration(seconds: 0);
-  Future<void> _initializeNTP() async {
-    try {
-      // Get the NTP time
-      final DateTime ntpStartTime = await NTP.now(
-        lookUpAddress: "time.google.com",
-      );
-      // Get the device's current time
-      final DateTime deviceStartTime = DateTime.now();
-
-      // Calculate the offset
-      _offset = ntpStartTime.difference(deviceStartTime);
-      // _ntpTime = deviceStartTime.add(Duration(milliseconds: _offset!));
-
-      print('NTP Time: $ntpStartTime');
-      print('Device Time: $deviceStartTime');
-      print('Offset (ms): $_offset');
-
-      // Immediately update the stream with the first synchronized time
-      // _clockStreamController.add(_ntpTime!);
-    } catch (e) {
-      print('Error synchronizing with NTP: $e');
-      // Fallback to device time if NTP fails
-      // _ntpTime = DateTime.now();
-      // _offset = 0;
-      // _clockStreamController.add(_ntpTime!);
-    }
-  }
-
-  MyAppState() {
-    unawaited(_initializeNTP());
-    void updateTime(_) {
-      print(_offset);
-      int start = DateTime.now().millisecondsSinceEpoch;
-      DateTime syncedTime = DateTime.now().add(_offset);
-      int end = DateTime.now().millisecondsSinceEpoch;
-      // syncedTime.add;
-      timeString = DateFormat('HH:mm:ss.S').format(syncedTime);
-      _offset += Duration(milliseconds: end - start);
-      notifyListeners();
-    }
-
-    Timer.periodic(Duration(milliseconds: 100), updateTime);
   }
 }
 
@@ -109,14 +62,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return LayoutBuilder(
       builder: (context, boxConstraints) => Scaffold(
         appBar: AppBar(
-          actions: [
-            ElevatedButton(
-              onPressed: () {
-                // print('hello');
-              },
-              child: Icon(Icons.menu),
-            ),
-          ],
+          actions: [MyCascadingMenu()],
           title: Center(child: TimeLabel()),
           backgroundColor: theme.colorScheme.surface,
           foregroundColor: theme.colorScheme.onSurface,
@@ -165,7 +111,9 @@ class BodyWidget extends StatefulWidget {
 class _BodyWidgetState extends State<BodyWidget> {
   Position? _lastPosition;
   double _distance = 0.0;
+  double _splitdistance = 0.0;
   double _speed = 0.0;
+  double _splitspeed = 0.0;
   double _totalAvgSpeed = 0.0;
   // Timer? _timer;
   // var _avgSpeed = Vector3D(0.0, 0.0, 0.0);
@@ -173,74 +121,100 @@ class _BodyWidgetState extends State<BodyWidget> {
   var _accl = Vector3D(0.0, 0.0, 0.0);
   DateTime? _lastTimeStamp;
   DateTime? _startTimeStamp;
+  DateTime? _splitstartTimeStamp;
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await WakelockPlus.enable();
-      await setUpLocation();
-      userAccelerometerEventStream().listen(
-        (UserAccelerometerEvent event) {
-          setState(() {
-            if (_lastTimeStamp != null) {
-              int delayms =
-                  event.timestamp.millisecondsSinceEpoch -
-                  _lastTimeStamp!.millisecondsSinceEpoch;
-              var tempaccl = _accl * (delayms / 1000);
-              // print('accl ${tempaccl.x} ${tempaccl.y} ${tempaccl.z}');
-              // _avgSpeed += _accl * (delayms / 1000);
-            }
-            // print('avgspeed ${_avgSpeed.x} ${_avgSpeed.y} ${_avgSpeed.z}');
-            _accl = Vector3D(event.x, event.y, event.z);
-            _totalAccl = _accl.magnitude();
-            // _totalAvgSpeed = _avgSpeed.magnitude();
-            _lastTimeStamp = event.timestamp;
-          });
-        },
-        onError: (error) {
-          print(error);
-        },
-      );
-      var settings = LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 1,
-      );
-      Geolocator.getPositionStream(locationSettings: settings).listen((
-        Position newPos,
-      ) {
-        double newDist = 0;
-        if (_totalAccl > 0.4) {
-          if (_lastPosition != null) {
-            newDist =
-                Geolocator.distanceBetween(
-                  _lastPosition!.latitude,
-                  _lastPosition!.longitude,
-                  newPos.latitude,
-                  newPos.longitude,
-                ) /
-                1000;
+      try {
+        if (Platform.isAndroid || Platform.isIOS) {
+          await WakelockPlus.enable();
+          var locSet = await setUpLocation();
+          print(0);
+          userAccelerometerEventStream().listen(
+            (UserAccelerometerEvent event) {
+              setState(() {
+                if (_lastTimeStamp != null) {
+                  int delayms =
+                      event.timestamp.millisecondsSinceEpoch -
+                      _lastTimeStamp!.millisecondsSinceEpoch;
+                  var tempaccl = _accl * (delayms / 1000);
+                  print(tempaccl);
+                  // print('accl ${tempaccl.x} ${tempaccl.y} ${tempaccl.z}');
+                  // _avgSpeed += _accl * (delayms / 1000);
+                }
+                // print('avgspeed ${_avgSpeed.x} ${_avgSpeed.y} ${_avgSpeed.z}');
+                _accl = Vector3D(event.x, event.y, event.z);
+                _totalAccl = _accl.magnitude();
+                // _totalAvgSpeed = _avgSpeed.magnitude();
+                _lastTimeStamp = event.timestamp;
+              });
+            },
+            onError: (error) {
+              print(error);
+            },
+          );
+          if (locSet) {
+            var settings = LocationSettings(
+              accuracy: LocationAccuracy.high,
+              distanceFilter: 1,
+            );
+            Geolocator.getPositionStream(locationSettings: settings).listen((
+              Position newPos,
+            ) {
+              double newDist = 0;
+              if (_totalAccl > 0.4) {
+                if (_lastPosition != null) {
+                  newDist =
+                      Geolocator.distanceBetween(
+                        _lastPosition!.latitude,
+                        _lastPosition!.longitude,
+                        newPos.latitude,
+                        newPos.longitude,
+                      ) /
+                      1000;
+                }
+              }
+              setState(() {
+                _distance += newDist;
+                _splitdistance += newDist;
+                _speed = newPos.speed * 3.6;
+                _lastPosition = newPos;
+              });
+            });
           }
         }
-        setState(() {
-          _distance += newDist;
-          _speed = newPos.speed * 3.6;
-          _lastPosition = newPos;
-        });
-      });
-      // setState(() {
-      Timer(Duration(milliseconds: 100), () {
-        if (_startTimeStamp != null) {
-          setState(() {
-            _totalAvgSpeed =
-                _distance /
+        print(0);
+        // });
+      } on Exception catch (e) {
+        print(e);
+      } finally {
+        _startTimeStamp = DateTime.now();
+        _splitstartTimeStamp = DateTime.now();
+        void changeSpeed(_) {
+          print(0);
+          if (_startTimeStamp != null) {
+            var timeTaken =
                 (DateTime.now().millisecondsSinceEpoch -
-                    _startTimeStamp!.millisecondsSinceEpoch) *
+                    _startTimeStamp!.millisecondsSinceEpoch) /
                 1000;
-          });
+            var splitTimeTaken =
+                (DateTime.now().millisecondsSinceEpoch -
+                    _splitstartTimeStamp!.millisecondsSinceEpoch) /
+                1000;
+            print(timeTaken);
+            setState(() {
+              _totalAvgSpeed = _distance / timeTaken * 3600;
+              _splitspeed = _splitdistance / splitTimeTaken * 3600;
+              // print(_totalAvgSpeed)
+            });
+          }
         }
-      });
-      // });
-      _startTimeStamp = DateTime.now();
+
+        print(0);
+        // setState(() {
+        Timer.periodic(Duration(milliseconds: 100), changeSpeed);
+      }
     });
   }
 
@@ -263,30 +237,73 @@ class _BodyWidgetState extends State<BodyWidget> {
         // Center is a layout widget. It takes a single child and positions it
         // in the middle of the parent.
         child: Column(
-          spacing: 10,
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: <Widget>[
-            Text(_distance.toStringAsFixed(2), style: largeFont),
-            Text(_speed.toStringAsFixed(2), style: largeFont),
-            Text(_totalAccl.toStringAsFixed(2), style: largeFont),
-            Text(_totalAvgSpeed.toStringAsFixed(2), style: largeFont),
-            Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('$lat', style: largeFont),
-                Text('$long', style: smallFont),
+                Column(
+                  spacing: 10,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    Text("Odo", style: largeFont),
+                    Column(
+                      children: [
+                        Text("Avg Speed", style: largeFont),
+                        Text("Instantaneous Spd", style: smallFont),
+                      ],
+                    ),
+                    // Text(_totalAvgSpeed.toStringAsFixed(2), style: largeFont),
+                    Text("Split Odo", style: largeFont),
+                    // Text(_totalAccl.toStringAsFixed(2), style: largeFont),
+                    Text("Split Speed", style: largeFont),
+                    Column(
+                      children: [
+                        Text('lat', style: largeFont),
+                        Text('long', style: smallFont),
+                      ],
+                    ),
+                  ],
+                ),
+                Column(
+                  spacing: 10,
+                  // Column is also a layout widget. It takes a list of children and
+                  // arranges them vertically. By default, it sizes itself to fit its
+                  // children horizontally, and tries to be as tall as its parent.
+                  //
+                  // Column has various properties to control how it sizes itself and
+                  // how it positions its children. Here we use mainAxisAlignment to
+                  // center the children vertically; the main axis here is the vertical
+                  // axis because Columns are vertical (the cross axis would be
+                  // horizontal).
+                  //
+                  // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
+                  // action in the IDE, or press "p" in the console), to see the
+                  // wireframe for each widget.
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    Text(_distance.toStringAsFixed(2), style: largeFont),
+                    Column(
+                      children: [
+                        Text(
+                          _totalAvgSpeed.toStringAsFixed(2),
+                          style: largeFont,
+                        ),
+                        Text(_speed.toStringAsFixed(2), style: smallFont),
+                      ],
+                    ),
+                    // Text(_totalAvgSpeed.toStringAsFixed(2), style: largeFont),
+                    Text(_splitdistance.toStringAsFixed(2), style: largeFont),
+                    // Text(_totalAccl.toStringAsFixed(2), style: largeFont),
+                    Text(_splitspeed.toStringAsFixed(2), style: largeFont),
+                    Column(
+                      children: [
+                        Text('$lat', style: largeFont),
+                        Text('$long', style: smallFont),
+                      ],
+                    ),
+                  ],
+                ),
               ],
             ),
             Row(
@@ -298,19 +315,37 @@ class _BodyWidgetState extends State<BodyWidget> {
                   height: boxConstraints.maxHeight * 0.1,
                   child: ElevatedButton(
                     onPressed: () {
-                      setState(() => _distance -= 0.01);
+                      setState(() {
+                        _distance -= 0.01;
+                        _splitdistance -= 0.01;
+                      });
                     },
-                    child: Text('-10', style: theme.textTheme.displayMedium),
+                    child: Text('-10', style: theme.textTheme.bodySmall),
                   ),
                 ),
-                // SizedBox(width: boxConstraints.maxWidth * 0.6),
+                SizedBox(
+                  width: boxConstraints.maxWidth * 0.3,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _splitdistance = 0.0;
+                        _splitspeed = 0.0;
+                        _splitstartTimeStamp = DateTime.now();
+                      });
+                    },
+                    child: Text('Reset', style: theme.textTheme.bodySmall),
+                  ),
+                ),
                 SizedBox(
                   height: boxConstraints.maxHeight * 0.1,
                   child: ElevatedButton(
                     onPressed: () {
-                      setState(() => _distance += 0.01);
+                      setState(() {
+                        _distance += 0.01;
+                        _splitdistance += 0.01;
+                      });
                     },
-                    child: Text('+10', style: theme.textTheme.displayMedium),
+                    child: Text('+10', style: theme.textTheme.bodySmall),
                   ),
                 ),
               ],

@@ -25,24 +25,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Flutter Demo',
-        theme: ThemeData(
-          // This is the theme of your application.
-          //
-          // TRY THIS: Try running your application with "flutter run". You'll see
-          // the application has a purple toolbar. Then, without quitting the app,
-          // try changing the seedColor in the colorScheme below to Colors.green
-          // and then invoke "hot reload" (save your changes or press the "hot
-          // reload" button in a Flutter-supported IDE, or press "r" if you used
-          // the command line to start the app).
-          //
-          // Notice that the counter didn't reset back to zero; the application
-          // state is not lost during the reload. To reset the state, use hot
-          // restart instead.
-          //
-          // This works for code too, not just values: Most code changes can be
-          // tested with just a hot reload.
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.black),
-        ),
+        theme: ThemeData.dark(),
         home: const MyHomePage(title: 'Flutter Demo Home Page'),
       ),
     );
@@ -127,44 +110,18 @@ class _MyHomePageState extends State<MyHomePage> {
       builder: (context, boxConstraints) => Scaffold(
         appBar: AppBar(
           actions: [
-            IconButton(
+            ElevatedButton(
               onPressed: () {
                 // print('hello');
               },
-              icon: Icon(Icons.menu),
+              child: Icon(Icons.menu),
             ),
           ],
           title: Center(child: TimeLabel()),
-          backgroundColor: theme.secondaryHeaderColor,
-          foregroundColor: theme.primaryColor,
+          backgroundColor: theme.colorScheme.surface,
+          foregroundColor: theme.colorScheme.onSurface,
         ),
-        bottomNavigationBar: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          // mainAxisSize: MainAxisSize.max
-          // labelPadding: EdgeInsets.all(100),
-          children: [
-            SizedBox(
-              height: boxConstraints.maxHeight * 0.05,
-              child: ElevatedButton(
-                onPressed: () {
-                  print('hello');
-                },
-                child: Text('-10'),
-              ),
-            ),
-            SizedBox(width: boxConstraints.maxWidth * 0.6),
-            SizedBox(
-              height: boxConstraints.maxHeight * 0.05,
-              child: ElevatedButton(
-                onPressed: () {
-                  print('hello');
-                },
-                child: Text('+10'),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: theme.primaryColor,
+        backgroundColor: theme.colorScheme.surface,
         body: BodyWidget(theme: theme),
         // floatingActionButton: FloatingActionButton(
         //   onPressed: _incrementCounter,
@@ -191,7 +148,7 @@ class _TimeLabelState extends State<TimeLabel> {
     return Text(
       appState.timeString,
       style: theme.textTheme.headlineLarge!.copyWith(
-        color: theme.colorScheme.primary,
+        color: theme.colorScheme.onSurface,
       ),
     );
   }
@@ -292,69 +249,74 @@ class _BodyWidgetState extends State<BodyWidget> {
     // var appState = context.watch<MyAppState>();
     var lat = _lastPosition?.latitude.toStringAsFixed(4);
     var long = _lastPosition?.longitude.toStringAsFixed(4);
+    var theme = Theme.of(context);
     var largeFont = widget.theme.textTheme.headlineLarge!.copyWith(
-      color: widget.theme.colorScheme.onPrimary,
+      color: widget.theme.colorScheme.onSurface,
       fontSize: 50,
     );
     var smallFont = widget.theme.textTheme.headlineLarge!.copyWith(
-      color: widget.theme.colorScheme.onPrimary,
+      color: widget.theme.colorScheme.onSurface,
       // has a fontSize 30
     );
-    return Center(
-      // Center is a layout widget. It takes a single child and positions it
-      // in the middle of the parent.
-      child: Column(
-        spacing: 10,
-        // Column is also a layout widget. It takes a list of children and
-        // arranges them vertically. By default, it sizes itself to fit its
-        // children horizontally, and tries to be as tall as its parent.
-        //
-        // Column has various properties to control how it sizes itself and
-        // how it positions its children. Here we use mainAxisAlignment to
-        // center the children vertically; the main axis here is the vertical
-        // axis because Columns are vertical (the cross axis would be
-        // horizontal).
-        //
-        // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-        // action in the IDE, or press "p" in the console), to see the
-        // wireframe for each widget.
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              Column(
-                children: [
-                  Text('$lat', style: largeFont),
-                  Text('$long', style: smallFont),
-                ],
-              ),
-              Column(
-                children: [
-                  Text(_distance.toStringAsFixed(2), style: largeFont),
-                  Text(_speed.toStringAsFixed(2), style: smallFont),
-                ],
-              ),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              Column(
-                children: [
-                  Text(_totalAccl.toStringAsFixed(2), style: largeFont),
-                  Text(_totalAvgSpeed.toStringAsFixed(2), style: smallFont),
-                ],
-              ),
-              Column(
-                children: [
-                  Text('hello world4', style: largeFont),
-                  Text('hello world4.1', style: smallFont),
-                ],
-              ),
-            ],
-          ),
-        ],
+    return LayoutBuilder(
+      builder: (context, boxConstraints) => Center(
+        // Center is a layout widget. It takes a single child and positions it
+        // in the middle of the parent.
+        child: Column(
+          spacing: 10,
+          // Column is also a layout widget. It takes a list of children and
+          // arranges them vertically. By default, it sizes itself to fit its
+          // children horizontally, and tries to be as tall as its parent.
+          //
+          // Column has various properties to control how it sizes itself and
+          // how it positions its children. Here we use mainAxisAlignment to
+          // center the children vertically; the main axis here is the vertical
+          // axis because Columns are vertical (the cross axis would be
+          // horizontal).
+          //
+          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
+          // action in the IDE, or press "p" in the console), to see the
+          // wireframe for each widget.
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: <Widget>[
+            Text(_distance.toStringAsFixed(2), style: largeFont),
+            Text(_speed.toStringAsFixed(2), style: largeFont),
+            Text(_totalAccl.toStringAsFixed(2), style: largeFont),
+            Text(_totalAvgSpeed.toStringAsFixed(2), style: largeFont),
+            Column(
+              children: [
+                Text('$lat', style: largeFont),
+                Text('$long', style: smallFont),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // mainAxisSize: MainAxisSize.max
+              // labelPadding: EdgeInsets.all(100),
+              children: [
+                SizedBox(
+                  height: boxConstraints.maxHeight * 0.1,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() => _distance -= 0.01);
+                    },
+                    child: Text('-10', style: theme.textTheme.displayMedium),
+                  ),
+                ),
+                // SizedBox(width: boxConstraints.maxWidth * 0.6),
+                SizedBox(
+                  height: boxConstraints.maxHeight * 0.1,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() => _distance += 0.01);
+                    },
+                    child: Text('+10', style: theme.textTheme.displayMedium),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

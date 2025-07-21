@@ -155,10 +155,7 @@ class _BodyWidgetState extends State<BodyWidget> {
             },
           );
           if (locSet) {
-            var settings = LocationSettings(
-              accuracy: LocationAccuracy.high,
-              distanceFilter: 1,
-            );
+            var settings = LocationSettings(accuracy: LocationAccuracy.best);
             Geolocator.getPositionStream(locationSettings: settings).listen((
               Position newPos,
             ) {

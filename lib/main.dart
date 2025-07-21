@@ -239,77 +239,60 @@ class _BodyWidgetState extends State<BodyWidget> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            // Label–Value Pairs
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  spacing: 10,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    Text("Odo", style: largeFont),
-                    Column(
-                      children: [
-                        Text("Avg Speed", style: largeFont),
-                        Text("Instantaneous Spd", style: smallFont),
-                      ],
-                    ),
-                    // Text(_totalAvgSpeed.toStringAsFixed(2), style: largeFont),
-                    Text("Split Odo", style: largeFont),
-                    // Text(_totalAccl.toStringAsFixed(2), style: largeFont),
-                    Text("Split Speed", style: largeFont),
-                    Column(
-                      children: [
-                        Text('lat', style: largeFont),
-                        Text('long', style: smallFont),
-                      ],
-                    ),
-                  ],
-                ),
-                Column(
-                  spacing: 10,
-                  // Column is also a layout widget. It takes a list of children and
-                  // arranges them vertically. By default, it sizes itself to fit its
-                  // children horizontally, and tries to be as tall as its parent.
-                  //
-                  // Column has various properties to control how it sizes itself and
-                  // how it positions its children. Here we use mainAxisAlignment to
-                  // center the children vertically; the main axis here is the vertical
-                  // axis because Columns are vertical (the cross axis would be
-                  // horizontal).
-                  //
-                  // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-                  // action in the IDE, or press "p" in the console), to see the
-                  // wireframe for each widget.
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    Text(_distance.toStringAsFixed(2), style: largeFont),
-                    Column(
-                      children: [
-                        Text(
-                          _totalAvgSpeed.toStringAsFixed(2),
-                          style: largeFont,
-                        ),
-                        Text(_speed.toStringAsFixed(2), style: smallFont),
-                      ],
-                    ),
-                    // Text(_totalAvgSpeed.toStringAsFixed(2), style: largeFont),
-                    Text(_splitdistance.toStringAsFixed(2), style: largeFont),
-                    // Text(_totalAccl.toStringAsFixed(2), style: largeFont),
-                    Text(_splitspeed.toStringAsFixed(2), style: largeFont),
-                    Column(
-                      children: [
-                        Text('$lat', style: largeFont),
-                        Text('$long', style: smallFont),
-                      ],
-                    ),
-                  ],
-                ),
+                Text("Odo", style: theme.textTheme.bodyLarge),
+                Text(_distance.toStringAsFixed(2), style: largeFont),
               ],
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              // mainAxisSize: MainAxisSize.max
-              // labelPadding: EdgeInsets.all(100),
+              children: [
+                Text("Avg Speed", style: theme.textTheme.bodyLarge),
+                Text(_totalAvgSpeed.toStringAsFixed(2), style: largeFont),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Instantaneous Spd", style: theme.textTheme.bodyLarge),
+                Text(_speed.toStringAsFixed(2), style: smallFont),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Split Odo", style: theme.textTheme.bodyLarge),
+                Text(_splitdistance.toStringAsFixed(2), style: largeFont),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Split Speed", style: theme.textTheme.bodyLarge),
+                Text(_splitspeed.toStringAsFixed(2), style: largeFont),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("lat", style: theme.textTheme.bodyLarge),
+                Text('$lat', style: smallFont),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("long", style: theme.textTheme.bodyLarge),
+                Text('$long', style: smallFont),
+              ],
+            ),
+
+            // Buttons Row (unchanged from your original)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 SizedBox(
                   height: boxConstraints.maxHeight * 0.1,
